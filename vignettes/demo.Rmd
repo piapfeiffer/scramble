@@ -1,0 +1,60 @@
+---
+title: "pcaSCRAMBLE() - short demo"
+author: "doubleblind"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(scramble)
+```
+
+This document demonstrates the usage of the algorithm proposed in the associated paper. The function `pcaSCRAMBLE()` implements the data transformation, provides a wrapper for hyperparameter optimization, and performs the optimization of the objective using Riemannian gradient descent. For the computation of the gradient steps on the manifold, a new optimizer has been implemented for the usage with `torch` for R, contained in the file `optimizer_SGD_Stiefel.R`.
+
+Let us first create a simulated example:
+```{r example_PCA}
+p <- 100
+n <- 50
+R <- matrix(0, ncol = p, nrow = p)
+R[1:4, 1:4] <- 0.9
+R[5:8, 5:8] <- 0.5
+diag(R) <- 1
+V <- diag(c(100, 100, 100, 100, 25, 25, 25, 25, rep(4, p - 8)))
+C <- sqrt(V) %*% R %*% sqrt(V)
+
+set.seed(1)
+data <- mvtnorm::rmvnorm(floor(n),
+                         mean = rep(0, p),
+                         sigma = C)
+```
+
+Next, we demonstrate the usage of the main function `pcaSCRAMBLE()`:
+```{r pcaSCRAMBLE}
+res_scramble <- pcaSCRAMBLE(data_x = data, 
+                            groups = NA,
+                            transformation = "identity",
+                            loss_type = "L2",
+                            param = NA,
+                            center = TRUE,
+                            scale = TRUE,
+                            alpha_x = 0.5,
+                            k = 2,
+                            tol = 1e-5,
+                            lr = 1e-3,
+                            epochs = 2000,
+                            lr_decay = 0.99,
+                            criterion = "TPO",
+                            bounds = c(1e-3, 10),
+                            penalties = NA)
+```
+
+
+In the first argument, the function expects the data matrix with $p$ variables in the columns and $n$ observations in the rows. Then, options regarding group structure, the data transformation to be applied, and the loss type can be specified. The second argument refers to a possible extension to group PCA, which has been implemented, but not investigated in detail yet. In this `group` argument, a vector of the same length as the data and containing the groupings has to be supplied. If left blank, no grouping is considered.
+
+For the `transformation` argument, the following options are available: `identity` does not perform any transformation, `spearman` refers to the rank-based transformation, and `wrapping` to the wrapping transformation. The transformed data is used to obtain a robust initial estimate of the principal components via SVD, and if robustness is desired, it is recommended to use either wrapping or the rank-based transformation. In addition, the loss function is important for obtaining a robust result. The type of loss functionis defined via the `loss_type` argument. Possible values are `L2`, corresponding to a least squares loss, `LTS` for a least trimmed squares loss, and `Huber` and `Tukey` referring to the well-known robust loss functions of the same name. The argument `param` controls the parameters of the loss functions and uses the default values if left blank. 
+
+The arguments `center` and `scale` control whether the data will be robustly centered and scaled using the median and Qn estimator, respectively. The elastic net parameter `alpha_x` can be set to any value between 0 (Ridge penalty) and 1 (LASSO penalty) and  `k` corresponds to the number of principal components to be computed, if left blank, it is set to the minimum of the number of observations and variables.  
+
+The arguments in Lines 10-13 of the previous code chunk are parameters for the training of the gradient descent algorithm, with a tolerance (`tol`) for convergence, a learning rate (`lr`), the maximum number of epochs (`epochs`), and the learning rate decay (`lr_decay`). 
+
+The last two arguments concern the hyperparameters: the `bounds` argument defines the range for the penalty, and if no hyperparameter optimization is desired, an exact penalty can be provided as a list to `penalties`. 
