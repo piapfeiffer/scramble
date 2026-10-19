@@ -153,3 +153,25 @@ test_that("spearman uses the location and scale of the data it is applied to", {
   expect_equal(fit(x, groups = rep(1:2, 20), center = FALSE, scale = FALSE)$a,
                fit(x, center = FALSE, scale = FALSE)$a, tolerance = 1e-6)
 })
+
+test_that("with groups, location and scale of every group are returned", {
+  skip_if_no_torch()
+  x <- make_data()
+  groups <- rep(c("b", "a"), 20)
+  res <- fit_quick(x, groups = groups, epochs = 30)
+  expect_equal(dim(res$robcenter), c(2, 6))
+  expect_equal(dim(res$robscale), c(2, 6))
+  expect_equal(rownames(res$robscale), c("b", "a"))
+  z <- x
+  for (g in unique(groups)) {
+    rows <- groups == g
+    z[rows, ] <- scale(x[rows, ], center = res$robcenter[g, ],
+                       scale = res$robscale[g, ])
+  }
+  expect_equal(res$phi, z %*% res$a, ignore_attr = TRUE)
+  # nothing is estimated without centering / scaling
+  res_raw <- fit_quick(x, groups = groups, center = FALSE, scale = FALSE,
+                       epochs = 30)
+  expect_true(all(res_raw$robcenter == 0))
+  expect_true(all(res_raw$robscale == 1))
+})

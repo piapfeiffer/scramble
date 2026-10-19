@@ -52,7 +52,9 @@
 #'   \item{summary}{Summary of the hyperparameter optimization, if done.}
 #'   \item{wt}{Currently always `NA`; kept for backward compatibility.}
 #'   \item{robscale, robcenter}{Robust scale and location estimates of the
-#'     variables.}
+#'     variables. With `groups`, a matrix with one row per group (row names
+#'     are the group labels) containing the estimates used for that group;
+#'     0 (location) and 1 (scale) if `center` or `scale` is `FALSE`.}
 #'   \item{alpha_x}{The elastic net parameter used.}
 #' }
 #' @export
@@ -161,25 +163,31 @@ pcaSCRAMBLE <- function(data_x,
     }
 
   } else { # groups
-    for (group in unique(groups)) {
-      data_g <- data_x[which(groups == group), ]
-      robcenter <- rep(0, ncol(data_x))
-      robscale <- rep(1, ncol(data_x))
+    # location and scale used for each group, one row per group (before
+    # version 0.2.0 only those of the last group were returned)
+    group_labels <- unique(groups)
+    robcenter <- matrix(0, length(group_labels), p,
+                        dimnames = list(group_labels, colnames(data_x)))
+    robscale <- matrix(1, length(group_labels), p,
+                       dimnames = list(group_labels, colnames(data_x)))
+    for (i in seq_along(group_labels)) {
+      rows <- which(groups == group_labels[i])
+      data_g <- data_x[rows, , drop = FALSE]
 
       if (isTRUE(center)) {
-        robcenter <- apply(data_g, 2, median, na.rm = TRUE)
+        robcenter[i, ] <- apply(data_g, 2, median, na.rm = TRUE)
         data_g <- scale(data_g,
-                        center = robcenter,
+                        center = robcenter[i, ],
                         scale = FALSE)
-        data_x[which(groups == group), ] <- data_g
+        data_x[rows, ] <- data_g
       }
 
       if (isTRUE(scale)) {
-        robscale <- apply(data_g, 2, stats::mad, na.rm = TRUE)
+        robscale[i, ] <- apply(data_g, 2, stats::mad, na.rm = TRUE)
         data_g <- scale(data_g,
                         center = FALSE,
-                        scale = ifelse(robscale == 0, 1, robscale))
-        data_x[which(groups == group), ] <- data_g
+                        scale = ifelse(robscale[i, ] == 0, 1, robscale[i, ]))
+        data_x[rows, ] <- data_g
       }
     }
   }

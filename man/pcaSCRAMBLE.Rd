@@ -87,7 +87,9 @@ An object of class `"PCA_result"`, a list with elements
   \item{summary}{Summary of the hyperparameter optimization, if done.}
   \item{wt}{Currently always `NA`; kept for backward compatibility.}
   \item{robscale, robcenter}{Robust scale and location estimates of the
-    variables.}
+    variables. With `groups`, a matrix with one row per group (row names
+    are the group labels) containing the estimates used for that group;
+    0 (location) and 1 (scale) if `center` or `scale` is `FALSE`.}
   \item{alpha_x}{The elastic net parameter used.}
 }
 }

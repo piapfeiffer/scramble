@@ -47,6 +47,14 @@ so that results can be traced to the version that produced them.
   1e-5 for the group LTS loss), sparsity patterns were unchanged, and training
   is about 5-10% faster.
 
+## Other changes
+
+* With `groups`, the returned `robcenter` and `robscale` are matrices with
+  one row per group (row names are the group labels), so that the
+  standardization of every group can be reproduced. Before, only the
+  estimates of the last group were returned. Without groups they are vectors
+  as before. Loadings, scores and variances are unchanged.
+
 ## Unchanged on purpose
 
 * The elastic net penalty of component j is weighted by the Qn of variable j
