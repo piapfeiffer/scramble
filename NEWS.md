@@ -1,5 +1,7 @@
 # scramble 0.2.0
 
+* First CRAN release.
+
 ## Changes to numerical results
 
 Version 0.1.0 reproduces the results of the code used in published papers
@@ -70,8 +72,12 @@ so that results can be traced to the version that produced them.
 
 # scramble 0.1.0
 
-* First CRAN release. The user-facing API (`pcaSCRAMBLE()`, `train_PCA_SVD()`,
-  `principal_angles()`, `TPR()`, `TNR()`, `plot()`) is unchanged.
+* Results are identical to the code used for Pfeiffer, Vana-Gür and
+  Filzmoser (2025), up to floating-point rounding from the faster solver
+  (see below); the changes below are documentation, input validation and
+  fixes for cases that previously failed. The user-facing API
+  (`pcaSCRAMBLE()`, `train_PCA_SVD()`, `principal_angles()`, `TPR()`, `TNR()`,
+  `plot()`) is unchanged.
 * `pcaSCRAMBLE()` validates its inputs and gives informative errors for
   missing or invalid `alpha_x`, unknown `transformation` / `loss_type`, and
   `k > min(n, p)` (previously cryptic errors).
