@@ -38,6 +38,15 @@ so that results can be traced to the version that produced them.
   `scale = FALSE`; `center = TRUE, scale = FALSE` without groups is unchanged
   (up to ~1e-15).
 
+* The residuals of the objective are computed in double precision. Before,
+  they were computed from a float32 copy of the data (torch's default type),
+  which limited the precision of the loss and its gradient. In the group mode
+  with `loss_type = "LTS"`, the residuals are now taken from the full
+  reconstruction instead of being recomputed per group (mathematically
+  identical). Loadings change by about 1e-7 or less in our comparisons (up to
+  1e-5 for the group LTS loss), sparsity patterns were unchanged, and training
+  is about 5-10% faster.
+
 # scramble 0.1.0
 
 * First CRAN release. The user-facing API (`pcaSCRAMBLE()`, `train_PCA_SVD()`,
