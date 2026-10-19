@@ -10,7 +10,10 @@ Description: Sparse and cellwise robust principal component analysis based on
     (Huber, Tukey, least trimmed squares), using 'torch' for automatic
     differentiation. Robust starting values are obtained from rank-based or
     wrapping transformations, and penalty parameters are tuned by Bayesian
-    optimization.
+    optimization. For details see Pfeiffer, Vana-Gür and Filzmoser (2025)
+    <doi:10.1007/s11634-025-00656-3>.
+URL: https://github.com/piapfeiffer/scramble
+BugReports: https://github.com/piapfeiffer/scramble/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.2
