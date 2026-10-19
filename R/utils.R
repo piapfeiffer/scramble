@@ -191,17 +191,23 @@ loss_tukey <- function(M, k = 1.35) {
 #' Function to compute trimmed loss for a given matrix.
 #'
 #' @param M             A matrix torch::torch_tensor
+#' Per column, only the proportion `h` of cells with the smallest squared
+#' residuals contributes to the loss; the other cells are trimmed.
+#'
 #' @param h             Trimming parameter (robustness) of observations to use per column
 #' @returns             A 1x1 torch::torch_tensor
 #' @noRd
 loss_lts <- function(M, h = 0.75) {
   least_squares <- M^2
-  threshold <- torch::torch_quantile(M,
+  # h-quantile of the squared residuals of each column; before version 0.2.0
+  # the quantile of the signed residuals M was used and compared with `<`,
+  # which kept far fewer cells than intended
+  threshold <- torch::torch_quantile(least_squares,
                                      torch::torch_tensor(h, dtype = torch::torch_double()),
                                      dim = 1,
                                      keepdim = TRUE,
                                      interpolation = "nearest")
-  lts_loss <- torch::torch_where(least_squares < threshold, least_squares, 0)
+  lts_loss <- torch::torch_where(least_squares <= threshold, least_squares, 0)
   loss <- torch::torch_mean(lts_loss)
   return(loss)
 }

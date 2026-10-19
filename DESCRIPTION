@@ -1,7 +1,7 @@
 Package: scramble
 Type: Package
 Title: Cellwise Robust and Sparse Principal Component Analysis
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
     person("Pia", "Pfeiffer", , "piabarbara.pfeiffer@gmail.com", role = c("aut", "cre"))
 Description: Sparse and cellwise robust principal component analysis based on

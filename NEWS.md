@@ -1,3 +1,21 @@
+# scramble 0.2.0
+
+## Changes to numerical results
+
+Version 0.1.0 reproduces the results of the code used in published papers
+(up to ~1e-10). The following fixes change results; each is a separate commit
+so that results can be traced to the version that produced them.
+
+* `loss_type = "LTS"`: the trimming threshold was the h-quantile of the
+  *signed* residuals, compared with `<` against the *squared* residuals. The
+  number of kept cells therefore depended on the scale of the residuals
+  (about 58% instead of 75% for standard normal residuals with `param = 0.75`,
+  fewer for larger residuals, and none for `param < 0.5`). The threshold is now
+  the h-quantile of the squared residuals of each variable and cells with
+  squared residual `<=` threshold are kept, so that the proportion `param` of
+  cells per variable is used as documented. Results with `loss_type = "LTS"`
+  change; other loss types are unaffected.
+
 # scramble 0.1.0
 
 * First CRAN release. The user-facing API (`pcaSCRAMBLE()`, `train_PCA_SVD()`,

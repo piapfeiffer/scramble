@@ -60,3 +60,18 @@ test_that("Huber loss downweights an outlier compared to squared loss", {
   m <- torch::torch_tensor(matrix(r, 20, 1), dtype = torch::torch_double())
   expect_lt(as.numeric(loss_huber(m)), mean(r^2) / 10)
 })
+
+test_that("LTS loss trims the largest squared residuals of each column", {
+  skip_if_no_torch()
+  # signed residuals: the trimming must not depend on the sign
+  r <- c(-1, 2, -3, 4, -5, 6, -7, 8)
+  m <- torch::torch_tensor(cbind(r, -r), dtype = torch::torch_double())
+  # h = 0.75 keeps the 6 of 8 cells with the smallest squares in each column
+  expect_equal(as.numeric(loss_lts(m, 0.75)), sum((1:6)^2) / 8)
+  expect_equal(as.numeric(loss_lts(m, 1)), mean(r^2))
+  # a single large outlier is trimmed completely
+  r_out <- c(rnorm(15), 1e3)
+  m_out <- torch::torch_tensor(matrix(r_out, 16, 1), dtype = torch::torch_double())
+  expect_equal(as.numeric(loss_lts(m_out, 0.75)),
+               sum(sort(r_out^2)[1:12]) / 16)
+})
