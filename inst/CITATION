@@ -1,0 +1,11 @@
+bibentry(
+  bibtype = "Article",
+  title = "Cellwise robust and sparse principal component analysis",
+  author = c(person("Pia", "Pfeiffer"),
+             person("Laura", "Vana-Gür"),
+             person("Peter", "Filzmoser")),
+  journal = "Advances in Data Analysis and Classification",
+  year = "2025",
+  doi = "10.1007/s11634-025-00656-3",
+  header = "To cite scramble in publications, please use:"
+)

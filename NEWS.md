@@ -1,7 +1,83 @@
+# scramble 0.2.0
+
+* First CRAN release.
+
+## Changes to numerical results
+
+Version 0.1.0 reproduces the results of the code used in published papers
+(up to ~1e-10). The following fixes change results; each is a separate commit
+so that results can be traced to the version that produced them.
+
+* `loss_type = "LTS"`: the trimming threshold was the h-quantile of the
+  *signed* residuals, compared with `<` against the *squared* residuals. The
+  number of kept cells therefore depended on the scale of the residuals
+  (about 58% instead of 75% for standard normal residuals with `param = 0.75`,
+  fewer for larger residuals, and none for `param < 0.5`). The threshold is now
+  the h-quantile of the squared residuals of each variable and cells with
+  squared residual `<=` threshold are kept, so that the proportion `param` of
+  cells per variable is used as documented. Results with `loss_type = "LTS"`
+  change; other loss types are unaffected.
+
+* `transformation = "wrapping"`: the data, already robustly standardized
+  with `center = TRUE` / `scale = TRUE`, were passed to `cellWise::wrap()`
+  together with the location and scale of the *raw* data, so they were
+  standardized a second time. Depending on the location and scale of the raw
+  variables this distorted the initial estimate or produced missing values
+  (and an error in `svd()`). `wrap()` now gets location 0 and scale 1 for
+  standardized data, and otherwise the median and Qn of the data it is
+  applied to. In simulations (n = 100, p = 20, 5% cellwise outliers) the
+  median angle between the initial and the true loadings dropped from
+  59/81 to 13/20 degrees. Results with `transformation = "wrapping"` change,
+  except with `center = FALSE, scale = FALSE` without groups.
+
+* `transformation = "spearman"` with `center = FALSE` or `scale = FALSE`:
+  the standardized ranks were given the location and scale of the *raw*
+  data, so with `center = FALSE, scale = TRUE` a location in the units of the
+  raw data was added to scaled data, and with groups the location 0 / scale 1
+  (or the estimates of the last group) were used. They now get the median /
+  Qn of the data the ranks are computed from. Results change for
+  `center = FALSE, scale = TRUE`, and for `groups` with `center = FALSE` or
+  `scale = FALSE`; `center = TRUE, scale = FALSE` without groups is unchanged
+  (up to ~1e-15).
+
+* The residuals of the objective are computed in double precision. Before,
+  they were computed from a float32 copy of the data (torch's default type),
+  which limited the precision of the loss and its gradient. In the group mode
+  with `loss_type = "LTS"`, the residuals are now taken from the full
+  reconstruction instead of being recomputed per group (mathematically
+  identical). Loadings change by about 1e-7 or less in our comparisons (up to
+  1e-5 for the group LTS loss), sparsity patterns were unchanged, and training
+  is about 5-10% faster.
+
+## Other changes
+
+* With `groups`, the returned `robcenter` and `robscale` are matrices with
+  one row per group (row names are the group labels), so that the
+  standardization of every group can be reproduced. Before, only the
+  estimates of the last group were returned. Without groups they are vectors
+  as before. Loadings, scores and variances are unchanged.
+* `epochs = 1` no longer fails (the thresholding of small loadings needed
+  the standard deviation of at least two epochs), `train_PCA_SVD()` also
+  works with `epochs = 0`, and `pcaSCRAMBLE()` gives an informative error for
+  `epochs < 1`. Results for `epochs >= 2` are unchanged.
+
+## Unchanged on purpose
+
+* The elastic net penalty of component j is weighted by the Qn of variable j
+  of the standardized data. With the default `scale = TRUE` and no groups,
+  all weights are 1; they differ from 1 only for `scale = FALSE` or with
+  `groups`. This is kept to reproduce published results.
+* With `groups`, the data are scaled with the MAD per group (without groups:
+  Qn), as documented.
+
 # scramble 0.1.0
 
-* First CRAN release. The user-facing API (`pcaSCRAMBLE()`, `train_PCA_SVD()`,
-  `principal_angles()`, `TPR()`, `TNR()`, `plot()`) is unchanged.
+* Results are identical to the code used for Pfeiffer, Vana-Gür and
+  Filzmoser (2025), up to floating-point rounding from the faster solver
+  (see below); the changes below are documentation, input validation and
+  fixes for cases that previously failed. The user-facing API
+  (`pcaSCRAMBLE()`, `train_PCA_SVD()`, `principal_angles()`, `TPR()`, `TNR()`,
+  `plot()`) is unchanged.
 * `pcaSCRAMBLE()` validates its inputs and gives informative errors for
   missing or invalid `alpha_x`, unknown `transformation` / `loss_type`, and
   `k > min(n, p)` (previously cryptic errors).

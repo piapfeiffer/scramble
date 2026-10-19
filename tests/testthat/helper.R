@@ -32,3 +32,16 @@ collect_warnings <- function(expr) {
   })
   list(value = value, warnings = warnings)
 }
+
+# configurations of the reference-value test; the reference values are created
+# by fixtures/make-reference.R and must only be regenerated deliberately
+reference_configs <- list(
+  L2 = list(),
+  Huber = list(loss_type = "Huber"),
+  wrapping_LTS = list(transformation = "wrapping", loss_type = "LTS",
+                      param = 0.75),
+  spearman_noscale = list(transformation = "spearman", scale = FALSE),
+  groups_L2 = list(groups = rep(1:2, 20)),
+  groups_LTS = list(groups = rep(1:2, 20), loss_type = "LTS")
+)
+reference_fields <- c("a", "a_ortho", "measure", "measure_ortho", "phi")

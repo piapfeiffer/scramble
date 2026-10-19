@@ -46,19 +46,22 @@ model_PCA_SVD <- torch::nn_module(
         self$V <- torch::nn_parameter(torch::torch_tensor(v,
                                                           dtype = torch::torch_double()), requires_grad = TRUE)
       }
+    # The penalty of component j is weighted by the Qn of *variable* j. With
+    # the default robust scaling (scale = TRUE, no groups) all these weights
+    # are 1. Kept as is deliberately, to reproduce published results.
     self$TV <- apply(X, 2, robustbase::Qn)
     # converting X to a tensor is costly for large data; do it only once.
-    # The residuals have always been computed as `X - B` with the R matrix X,
-    # which torch converts with its default dtype (float32); X_resid keeps
-    # exactly that behaviour so that results are unchanged.
+    # Before version 0.2.0 the residuals were computed from a float32 copy of
+    # X (torch's default dtype); now everything is in double precision.
     self$X_tensor <- torch::torch_tensor(X, dtype = torch::torch_double())
-    self$X_resid <- torch::torch_tensor(X)
+    if (!is.na(groups[1])) {
+      self$group_rows <- lapply(unique(groups), function(g) which(groups == g))
+    }
 
   }, forward = function(X) {
     # X must be the matrix the module was initialized with; its tensor
     # versions are cached in initialize()
     X_t <- self$X_tensor
-    X_r <- self$X_resid
 
     # elastic net penalty of all columns at once
     V <- self$V
@@ -70,33 +73,30 @@ model_PCA_SVD <- torch::nn_module(
 
     B <- torch::torch_matmul(torch::torch_matmul(X_t, V),
                              torch::torch_transpose(V, 1, -1))
+    resid <- X_t - B
     if (self$loss_type == "L2") {
-      loss <- torch::torch_mean(torch::torch_square(X_r - B)) + torch::torch_sum(G)
+      loss <- torch::torch_mean(torch::torch_square(resid)) + torch::torch_sum(G)
 
     } else if (self$loss_type == "Huber") {
-      loss <- loss_huber(X_r - B) + torch::torch_sum(G)
+      loss <- loss_huber(resid) + torch::torch_sum(G)
 
     } else if (self$loss_type == "Tukey") {
-      loss <- loss_tukey(X_r - B) + torch::torch_sum(G)
+      loss <- loss_tukey(resid) + torch::torch_sum(G)
 
     } else if (self$loss_type == "LTS") {
-      if (is.na(self$groups[1])){
-        loss <- loss_lts(X_r - B, self$h) + torch::torch_sum(G)
-      }
-      else{
+      if (is.na(self$groups[1])) {
+        loss <- loss_lts(resid, self$h) + torch::torch_sum(G)
+      } else {
+        # trimming per group: sum of the LTS losses of the groups
         loss <- torch::torch_sum(G)
-        for (group in unique(self$groups)){
-          XG <- X[which(self$groups == group),]
-          BG <-  torch::torch_matmul(torch::torch_tensor(XG, dtype = torch::torch_double()),
-                                    torch::torch_matmul(self$V,
-                                                        torch::torch_transpose(self$V, 1, -1)))
-          loss <- loss + loss_lts(XG - BG, self$h)
+        for (rows in self$group_rows) {
+          loss <- loss + loss_lts(resid[rows, , drop = FALSE], self$h)
         }
       }
 
-    }else {
+    } else {
       warning(paste("Loss type:",self$loss_type, "not implemented, standard L2 loss is used instead!"))
-      loss <- torch::torch_square(torch::torch_norm(X_r - B)) + torch::torch_sum(G)
+      loss <- torch::torch_square(torch::torch_norm(resid)) + torch::torch_sum(G)
     }
 
      loss

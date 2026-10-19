@@ -103,6 +103,7 @@ test_that("invalid input gives informative errors", {
   expect_error(pcaSCRAMBLE(x, alpha_x = 0.5, groups = 1:3), "groups")
   expect_error(pcaSCRAMBLE(x, alpha_x = 0.5, k = 0), "k")
   expect_error(pcaSCRAMBLE(x, alpha_x = 0.5, bounds = 1), "bounds")
+  expect_error(pcaSCRAMBLE(x, alpha_x = 0.5, epochs = 0), "epochs")
   expect_error(pcaSCRAMBLE(matrix(letters[1:4], 2), alpha_x = 0.5), "numeric")
 })
 
@@ -117,19 +118,77 @@ test_that("plot works and restores graphical parameters", {
 })
 
 test_that("results match the reference values", {
-  # guards against unintended numerical changes; see tests/testthat/fixtures
+  # guards against unintended numerical changes; see
+  # fixtures/make-reference.R for how (and when) to regenerate the values
   skip_if_no_torch()
   skip_on_cran()
   x <- make_data()
-  fields <- c("a", "a_ortho", "measure", "measure_ortho", "phi")
   ref <- readRDS(test_path("fixtures", "reference.rds"))
+  expect_setequal(names(ref), names(reference_configs))
   for (cfg in names(ref)) {
-    args <- switch(cfg,
-                   L2 = list(),
-                   Huber = list(loss_type = "Huber"),
-                   wrapping_LTS = list(transformation = "wrapping",
-                                       loss_type = "LTS", param = 0.75))
-    res <- do.call(fit_quick, c(list(x), args))
-    expect_equal(res[fields], ref[[cfg]], tolerance = 1e-6, label = cfg)
+    res <- do.call(fit_quick, c(list(x), reference_configs[[cfg]]))
+    expect_equal(res[reference_fields], ref[[cfg]], tolerance = 1e-6,
+                 label = cfg)
   }
+})
+
+test_that("wrapping is invariant to the location and scale of the variables", {
+  skip_if_no_torch()
+  x <- make_data()
+  y <- sweep(x, 2, c(1, 2, 5, 0.1, 3, 10), `*`) + 7
+  fit <- function(x, ...) fit_quick(x, transformation = "wrapping", epochs = 30, ...)
+  expect_equal(fit(y)$a, fit(x)$a, tolerance = 1e-6)
+  # only scaled: invariant to scaling (location matters, the data are not centered)
+  expect_equal(fit(x * 4, center = FALSE)$a, fit(x, center = FALSE)$a,
+               tolerance = 1e-6)
+})
+
+test_that("spearman uses the location and scale of the data it is applied to", {
+  skip_if_no_torch()
+  x <- make_data()
+  fit <- function(x, ...) fit_quick(x, transformation = "spearman", epochs = 30, ...)
+  # scaled but not centered: invariant to scaling of the data
+  expect_equal(fit(x * 4, center = FALSE)$a, fit(x, center = FALSE)$a,
+               tolerance = 1e-6)
+  # without standardization, groups play no role for the initial estimate
+  expect_equal(fit(x, groups = rep(1:2, 20), center = FALSE, scale = FALSE)$a,
+               fit(x, center = FALSE, scale = FALSE)$a, tolerance = 1e-6)
+})
+
+test_that("with groups, location and scale of every group are returned", {
+  skip_if_no_torch()
+  x <- make_data()
+  groups <- rep(c("b", "a"), 20)
+  res <- fit_quick(x, groups = groups, epochs = 30)
+  expect_equal(dim(res$robcenter), c(2, 6))
+  expect_equal(dim(res$robscale), c(2, 6))
+  expect_equal(rownames(res$robscale), c("b", "a"))
+  z <- x
+  for (g in unique(groups)) {
+    rows <- groups == g
+    z[rows, ] <- scale(x[rows, ], center = res$robcenter[g, ],
+                       scale = res$robscale[g, ])
+  }
+  expect_equal(res$phi, z %*% res$a, ignore_attr = TRUE)
+  # nothing is estimated without centering / scaling
+  res_raw <- fit_quick(x, groups = groups, center = FALSE, scale = FALSE,
+                       epochs = 30)
+  expect_true(all(res_raw$robcenter == 0))
+  expect_true(all(res_raw$robscale == 1))
+})
+
+test_that("a single epoch works", {
+  skip_if_no_torch()
+  res <- fit_quick(epochs = 1)
+  expect_s3_class(res, "PCA_result")
+  expect_length(res$loss, 1)
+  expect_false(anyNA(res$a))
+  # train_PCA_SVD() also works without any epoch (returns the start values)
+  x <- scale(make_data())
+  rsvd <- list(v = svd(x)$v[, 1:2])
+  res0 <- suppressWarnings(train_PCA_SVD(x, NA, rsvd, 40, 6, pen_x = 0.1,
+                                         alpha_x = 0.5, loss_type = "L2",
+                                         h = NA, tol = 1e-5, lr = 1e-3,
+                                         epochs = 0, lr_decay = 1))
+  expect_equal(res0$best_v, rsvd$v, ignore_attr = TRUE)
 })

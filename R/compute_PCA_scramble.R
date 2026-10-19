@@ -52,7 +52,9 @@
 #'   \item{summary}{Summary of the hyperparameter optimization, if done.}
 #'   \item{wt}{Currently always `NA`; kept for backward compatibility.}
 #'   \item{robscale, robcenter}{Robust scale and location estimates of the
-#'     variables.}
+#'     variables. With `groups`, a matrix with one row per group (row names
+#'     are the group labels) containing the estimates used for that group;
+#'     0 (location) and 1 (scale) if `center` or `scale` is `FALSE`.}
 #'   \item{alpha_x}{The elastic net parameter used.}
 #' }
 #' @export
@@ -123,6 +125,9 @@ pcaSCRAMBLE <- function(data_x,
       stop("`param` must be in (0, 1] for loss_type = \"LTS\".", call. = FALSE)
     }
   }
+  if (!is.numeric(epochs) || length(epochs) != 1 || is.na(epochs) || epochs < 1) {
+    stop("`epochs` must be a positive integer.", call. = FALSE)
+  }
   if (!is.numeric(bounds) || length(bounds) != 2 || any(bounds < 0)) {
     stop("`bounds` must be a numeric vector of two non-negative values.",
          call. = FALSE)
@@ -161,28 +166,39 @@ pcaSCRAMBLE <- function(data_x,
     }
 
   } else { # groups
-    for (group in unique(groups)) {
-      data_g <- data_x[which(groups == group), ]
-      robcenter <- rep(0, ncol(data_x))
-      robscale <- rep(1, ncol(data_x))
+    # location and scale used for each group, one row per group (before
+    # version 0.2.0 only those of the last group were returned)
+    group_labels <- unique(groups)
+    robcenter <- matrix(0, length(group_labels), p,
+                        dimnames = list(group_labels, colnames(data_x)))
+    robscale <- matrix(1, length(group_labels), p,
+                       dimnames = list(group_labels, colnames(data_x)))
+    for (i in seq_along(group_labels)) {
+      rows <- which(groups == group_labels[i])
+      data_g <- data_x[rows, , drop = FALSE]
 
       if (isTRUE(center)) {
-        robcenter <- apply(data_g, 2, median, na.rm = TRUE)
+        robcenter[i, ] <- apply(data_g, 2, median, na.rm = TRUE)
         data_g <- scale(data_g,
-                        center = robcenter,
+                        center = robcenter[i, ],
                         scale = FALSE)
-        data_x[which(groups == group), ] <- data_g
+        data_x[rows, ] <- data_g
       }
 
       if (isTRUE(scale)) {
-        robscale <- apply(data_g, 2, stats::mad, na.rm = TRUE)
+        robscale[i, ] <- apply(data_g, 2, stats::mad, na.rm = TRUE)
         data_g <- scale(data_g,
                         center = FALSE,
-                        scale = ifelse(robscale == 0, 1, robscale))
-        data_x[which(groups == group), ] <- data_g
+                        scale = ifelse(robscale[i, ] == 0, 1, robscale[i, ]))
+        data_x[rows, ] <- data_g
       }
     }
   }
+
+  # robust location and scale of the data entering the transformation: data
+  # standardized above have location 0 and scale 1
+  loc_x <- if (isTRUE(center)) rep(0, p) else apply(data_x, 2, median, na.rm = TRUE)
+  scale_x <- if (isTRUE(scale)) rep(1, p) else apply(data_x, 2, robustbase::Qn, na.rm = TRUE)
 
   # robust initial estimate of the loadings
   if (transformation == "identity") {
@@ -193,18 +209,22 @@ pcaSCRAMBLE <- function(data_x,
     t_x <- scale(t_x,
                  center = apply(t_x, 2, mean),
                  scale = apply(t_x, 2, sd))
+    # give the ranks the location and scale of the data; before version
+    # 0.2.0 those of the raw data (or, with groups, of the last group) were used
     if (!isTRUE(scale)) {
-      t_x <- sweep(t_x, MARGIN = 2, robscale, `*`)
+      t_x <- sweep(t_x, MARGIN = 2, scale_x, `*`)
     }
     if (!isTRUE(center)) {
-      t_x <- sweep(t_x, MARGIN = 2, robcenter, `+`)
+      t_x <- sweep(t_x, MARGIN = 2, loc_x, `+`)
     }
     rsvd <- svd(t_x)
 
   } else if (transformation == "wrapping") {
+    # before version 0.2.0, the location and scale of the raw data were used
+    # here, which standardized the data a second time
     t_x <- cellWise::wrap(data_x,
-                          locX = robcenter,
-                          scaleX = robscale)$Xw
+                          locX = loc_x,
+                          scaleX = scale_x)$Xw
     rsvd <- svd(t_x)
   }
 

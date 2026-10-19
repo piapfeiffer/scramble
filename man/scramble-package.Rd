@@ -6,10 +6,31 @@
 \alias{scramble-package}
 \title{scramble: Cellwise Robust and Sparse Principal Component Analysis}
 \description{
-Sparse and cellwise robust principal component analysis based on manifold optimization. Loadings are estimated by Riemannian gradient descent on the Stiefel manifold with an elastic net penalty and robust loss functions (Huber, Tukey, least trimmed squares), using 'torch' for automatic differentiation. Robust starting values are obtained from rank-based or wrapping transformations, and penalty parameters are tuned by Bayesian optimization.
+Sparse and cellwise robust principal component analysis based on manifold optimization. Loadings are estimated by Riemannian gradient descent on the Stiefel manifold with an elastic net penalty and robust loss functions (Huber, Tukey, least trimmed squares), using 'torch' for automatic differentiation. Robust starting values are obtained from rank-based or wrapping transformations, and penalty parameters are tuned by Bayesian optimization. For details see Pfeiffer, Vana-Gür and Filzmoser (2025) \doi{10.1007/s11634-025-00656-3}.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/piapfeiffer/scramble}
+  \item Report bugs at \url{https://github.com/piapfeiffer/scramble/issues}
+}
+
 }
 \author{
-\strong{Maintainer}: Pia Pfeiffer \email{piabarbara.pfeiffer@gmail.com}
+\strong{Maintainer}: Pia Pfeiffer \email{pia.pfeiffer@tuwien.ac.at} (\href{https://orcid.org/0000-0002-8492-7318}{ORCID}) [copyright holder]
+
+Authors:
+\itemize{
+  \item Pia Pfeiffer \email{pia.pfeiffer@tuwien.ac.at} (\href{https://orcid.org/0000-0002-8492-7318}{ORCID}) [copyright holder]
+}
+
+Other contributors:
+\itemize{
+  \item Laura Vana-G<U+00FC>r [thesis advisor]
+  \item Peter Filzmoser [thesis advisor]
+  \item Daniel Falbel (optimizer template adapted from 'torch') [contributor, copyright holder]
+  \item  RStudio (copyright holder of 'torch') [copyright holder]
+}
 
 }
 \keyword{internal}

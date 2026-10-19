@@ -125,7 +125,12 @@ train_PCA_SVD <- function(X,
 
   # set loadings to zero that are smaller than the recent fluctuation of the
   # iterates, then renormalize the columns
-  threshold_v <- mean(recent_diff_v) + 2 * sd(recent_diff_v)
+  # (the sd needs two epochs: after a single epoch only the mean is used,
+  # without any epoch nothing is thresholded)
+  threshold_v <- switch(min(length(recent_diff_v), 2) + 1,
+                        0,
+                        recent_diff_v,
+                        mean(recent_diff_v) + 2 * sd(recent_diff_v))
   best_v_ortho <- best_v
   best_measure_ortho <- best_measure
   best_v_thresh <- ifelse(abs(best_v) > threshold_v, best_v, 0)

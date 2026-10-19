@@ -1,3 +1,10 @@
+# Riemannian SGD on the Stiefel manifold (Cayley transform retraction).
+#
+# The structure of this optimizer (initialize/step, the loop over parameter
+# groups and parameters, and the plain Euclidean SGD step for
+# manifold = FALSE) is adapted from optim_sgd() and the optimizer template in
+# the 'torch' package, Copyright (c) 2020 Daniel Falbel and RStudio, licensed
+# under the MIT license. See inst/COPYRIGHTS.
 optim_sgd_manifold <- torch::optimizer(
   initialize = function(params, lr, manifold, threshold = NA) {
     defaults <- list(
