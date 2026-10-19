@@ -103,6 +103,7 @@ test_that("invalid input gives informative errors", {
   expect_error(pcaSCRAMBLE(x, alpha_x = 0.5, groups = 1:3), "groups")
   expect_error(pcaSCRAMBLE(x, alpha_x = 0.5, k = 0), "k")
   expect_error(pcaSCRAMBLE(x, alpha_x = 0.5, bounds = 1), "bounds")
+  expect_error(pcaSCRAMBLE(x, alpha_x = 0.5, epochs = 0), "epochs")
   expect_error(pcaSCRAMBLE(matrix(letters[1:4], 2), alpha_x = 0.5), "numeric")
 })
 
@@ -174,4 +175,20 @@ test_that("with groups, location and scale of every group are returned", {
                        epochs = 30)
   expect_true(all(res_raw$robcenter == 0))
   expect_true(all(res_raw$robscale == 1))
+})
+
+test_that("a single epoch works", {
+  skip_if_no_torch()
+  res <- fit_quick(epochs = 1)
+  expect_s3_class(res, "PCA_result")
+  expect_length(res$loss, 1)
+  expect_false(anyNA(res$a))
+  # train_PCA_SVD() also works without any epoch (returns the start values)
+  x <- scale(make_data())
+  rsvd <- list(v = svd(x)$v[, 1:2])
+  res0 <- suppressWarnings(train_PCA_SVD(x, NA, rsvd, 40, 6, pen_x = 0.1,
+                                         alpha_x = 0.5, loss_type = "L2",
+                                         h = NA, tol = 1e-5, lr = 1e-3,
+                                         epochs = 0, lr_decay = 1))
+  expect_equal(res0$best_v, rsvd$v, ignore_attr = TRUE)
 })

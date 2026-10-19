@@ -125,6 +125,9 @@ pcaSCRAMBLE <- function(data_x,
       stop("`param` must be in (0, 1] for loss_type = \"LTS\".", call. = FALSE)
     }
   }
+  if (!is.numeric(epochs) || length(epochs) != 1 || is.na(epochs) || epochs < 1) {
+    stop("`epochs` must be a positive integer.", call. = FALSE)
+  }
   if (!is.numeric(bounds) || length(bounds) != 2 || any(bounds < 0)) {
     stop("`bounds` must be a numeric vector of two non-negative values.",
          call. = FALSE)

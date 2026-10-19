@@ -54,6 +54,10 @@ so that results can be traced to the version that produced them.
   standardization of every group can be reproduced. Before, only the
   estimates of the last group were returned. Without groups they are vectors
   as before. Loadings, scores and variances are unchanged.
+* `epochs = 1` no longer fails (the thresholding of small loadings needed
+  the standard deviation of at least two epochs), `train_PCA_SVD()` also
+  works with `epochs = 0`, and `pcaSCRAMBLE()` gives an informative error for
+  `epochs < 1`. Results for `epochs >= 2` are unchanged.
 
 ## Unchanged on purpose
 
