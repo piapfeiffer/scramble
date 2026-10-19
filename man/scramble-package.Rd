@@ -6,7 +6,15 @@
 \alias{scramble-package}
 \title{scramble: Cellwise Robust and Sparse Principal Component Analysis}
 \description{
-Sparse and cellwise robust principal component analysis based on manifold optimization. Loadings are estimated by Riemannian gradient descent on the Stiefel manifold with an elastic net penalty and robust loss functions (Huber, Tukey, least trimmed squares), using 'torch' for automatic differentiation. Robust starting values are obtained from rank-based or wrapping transformations, and penalty parameters are tuned by Bayesian optimization.
+Sparse and cellwise robust principal component analysis based on manifold optimization. Loadings are estimated by Riemannian gradient descent on the Stiefel manifold with an elastic net penalty and robust loss functions (Huber, Tukey, least trimmed squares), using 'torch' for automatic differentiation. Robust starting values are obtained from rank-based or wrapping transformations, and penalty parameters are tuned by Bayesian optimization. For details see Pfeiffer, Vana-Gür and Filzmoser (2025) \doi{10.1007/s11634-025-00656-3}.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/piapfeiffer/scramble}
+  \item Report bugs at \url{https://github.com/piapfeiffer/scramble/issues}
+}
+
 }
 \author{
 \strong{Maintainer}: Pia Pfeiffer \email{piabarbara.pfeiffer@gmail.com}
