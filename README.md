@@ -87,4 +87,6 @@ You can also get the reference from R with `citation("scramble")`.
 
 ## License
 
-MIT © scramble authors
+MIT © Pia Pfeiffer. The Stiefel manifold optimizer is adapted from the
+optimizer template of [`torch`](https://torch.mlverse.org/) (MIT, © Daniel
+Falbel and RStudio); see `inst/COPYRIGHTS`.

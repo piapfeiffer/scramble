@@ -2,8 +2,16 @@ Package: scramble
 Type: Package
 Title: Cellwise Robust and Sparse Principal Component Analysis
 Version: 0.2.0
-Authors@R:
-    person("Pia", "Pfeiffer", , "pia.pfeiffer@tuwien.ac.at", role = c("aut", "cre"))
+Authors@R: c(
+    person("Pia", "Pfeiffer", , "pia.pfeiffer@tuwien.ac.at", role = c("aut", "cre", "cph"),
+           comment = c(ORCID = "0000-0002-8492-7318")),
+    person("Laura", "Vana-Gür", role = "ths"),
+    person("Peter", "Filzmoser", role = "ths"),
+    person("Daniel", "Falbel", role = c("ctb", "cph"),
+           comment = "optimizer template adapted from 'torch'"),
+    person(family = "RStudio", role = "cph",
+           comment = "copyright holder of 'torch'")
+  )
 Description: Sparse and cellwise robust principal component analysis based on
     manifold optimization. Loadings are estimated by Riemannian gradient descent
     on the Stiefel manifold with an elastic net penalty and robust loss functions
@@ -15,6 +23,7 @@ Description: Sparse and cellwise robust principal component analysis based on
 URL: https://github.com/piapfeiffer/scramble
 BugReports: https://github.com/piapfeiffer/scramble/issues
 License: MIT + file LICENSE
+Copyright: See file inst/COPYRIGHTS for code adapted from 'torch'.
 Encoding: UTF-8
 Language: en-US
 Imports:

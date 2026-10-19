@@ -17,11 +17,19 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Pia Pfeiffer \email{pia.pfeiffer@tuwien.ac.at}
+\strong{Maintainer}: Pia Pfeiffer \email{pia.pfeiffer@tuwien.ac.at} (\href{https://orcid.org/0000-0002-8492-7318}{ORCID}) [copyright holder]
 
 Authors:
 \itemize{
-  \item Pia Pfeiffer \email{pia.pfeiffer@tuwien.ac.at}
+  \item Pia Pfeiffer \email{pia.pfeiffer@tuwien.ac.at} (\href{https://orcid.org/0000-0002-8492-7318}{ORCID}) [copyright holder]
+}
+
+Other contributors:
+\itemize{
+  \item Laura Vana-G<U+00FC>r [thesis advisor]
+  \item Peter Filzmoser [thesis advisor]
+  \item Daniel Falbel (optimizer template adapted from 'torch') [contributor, copyright holder]
+  \item  RStudio (copyright holder of 'torch') [copyright holder]
 }
 
 }
