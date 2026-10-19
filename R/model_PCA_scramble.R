@@ -46,6 +46,9 @@ model_PCA_SVD <- torch::nn_module(
         self$V <- torch::nn_parameter(torch::torch_tensor(v,
                                                           dtype = torch::torch_double()), requires_grad = TRUE)
       }
+    # The penalty of component j is weighted by the Qn of *variable* j. With
+    # the default robust scaling (scale = TRUE, no groups) all these weights
+    # are 1. Kept as is deliberately, to reproduce published results.
     self$TV <- apply(X, 2, robustbase::Qn)
     # converting X to a tensor is costly for large data; do it only once.
     # Before version 0.2.0 the residuals were computed from a float32 copy of

@@ -47,6 +47,15 @@ so that results can be traced to the version that produced them.
   1e-5 for the group LTS loss), sparsity patterns were unchanged, and training
   is about 5-10% faster.
 
+## Unchanged on purpose
+
+* The elastic net penalty of component j is weighted by the Qn of variable j
+  of the standardized data. With the default `scale = TRUE` and no groups,
+  all weights are 1; they differ from 1 only for `scale = FALSE` or with
+  `groups`. This is kept to reproduce published results.
+* With `groups`, the data are scaled with the MAD per group (without groups:
+  Qn), as documented.
+
 # scramble 0.1.0
 
 * First CRAN release. The user-facing API (`pcaSCRAMBLE()`, `train_PCA_SVD()`,
