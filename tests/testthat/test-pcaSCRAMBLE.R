@@ -117,19 +117,16 @@ test_that("plot works and restores graphical parameters", {
 })
 
 test_that("results match the reference values", {
-  # guards against unintended numerical changes; see tests/testthat/fixtures
+  # guards against unintended numerical changes; see
+  # fixtures/make-reference.R for how (and when) to regenerate the values
   skip_if_no_torch()
   skip_on_cran()
   x <- make_data()
-  fields <- c("a", "a_ortho", "measure", "measure_ortho", "phi")
   ref <- readRDS(test_path("fixtures", "reference.rds"))
+  expect_setequal(names(ref), names(reference_configs))
   for (cfg in names(ref)) {
-    args <- switch(cfg,
-                   L2 = list(),
-                   Huber = list(loss_type = "Huber"),
-                   wrapping_LTS = list(transformation = "wrapping",
-                                       loss_type = "LTS", param = 0.75))
-    res <- do.call(fit_quick, c(list(x), args))
-    expect_equal(res[fields], ref[[cfg]], tolerance = 1e-6, label = cfg)
+    res <- do.call(fit_quick, c(list(x), reference_configs[[cfg]]))
+    expect_equal(res[reference_fields], ref[[cfg]], tolerance = 1e-6,
+                 label = cfg)
   }
 })
