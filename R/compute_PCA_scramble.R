@@ -184,6 +184,11 @@ pcaSCRAMBLE <- function(data_x,
     }
   }
 
+  # robust location and scale of the data entering the transformation: data
+  # standardized above have location 0 and scale 1
+  loc_x <- if (isTRUE(center)) rep(0, p) else apply(data_x, 2, median, na.rm = TRUE)
+  scale_x <- if (isTRUE(scale)) rep(1, p) else apply(data_x, 2, robustbase::Qn, na.rm = TRUE)
+
   # robust initial estimate of the loadings
   if (transformation == "identity") {
     rsvd <- svd(data_x)
@@ -202,9 +207,11 @@ pcaSCRAMBLE <- function(data_x,
     rsvd <- svd(t_x)
 
   } else if (transformation == "wrapping") {
+    # before version 0.2.0, the location and scale of the raw data were used
+    # here, which standardized the data a second time
     t_x <- cellWise::wrap(data_x,
-                          locX = robcenter,
-                          scaleX = robscale)$Xw
+                          locX = loc_x,
+                          scaleX = scale_x)$Xw
     rsvd <- svd(t_x)
   }
 

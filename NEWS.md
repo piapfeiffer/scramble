@@ -16,6 +16,18 @@ so that results can be traced to the version that produced them.
   cells per variable is used as documented. Results with `loss_type = "LTS"`
   change; other loss types are unaffected.
 
+* `transformation = "wrapping"`: the data, already robustly standardized
+  with `center = TRUE` / `scale = TRUE`, were passed to `cellWise::wrap()`
+  together with the location and scale of the *raw* data, so they were
+  standardized a second time. Depending on the location and scale of the raw
+  variables this distorted the initial estimate or produced missing values
+  (and an error in `svd()`). `wrap()` now gets location 0 and scale 1 for
+  standardized data, and otherwise the median and Qn of the data it is
+  applied to. In simulations (n = 100, p = 20, 5% cellwise outliers) the
+  median angle between the initial and the true loadings dropped from
+  59/81 to 13/20 degrees. Results with `transformation = "wrapping"` change,
+  except with `center = FALSE, scale = FALSE` without groups.
+
 # scramble 0.1.0
 
 * First CRAN release. The user-facing API (`pcaSCRAMBLE()`, `train_PCA_SVD()`,

@@ -130,3 +130,14 @@ test_that("results match the reference values", {
                  label = cfg)
   }
 })
+
+test_that("wrapping is invariant to the location and scale of the variables", {
+  skip_if_no_torch()
+  x <- make_data()
+  y <- sweep(x, 2, c(1, 2, 5, 0.1, 3, 10), `*`) + 7
+  fit <- function(x, ...) fit_quick(x, transformation = "wrapping", epochs = 30, ...)
+  expect_equal(fit(y)$a, fit(x)$a, tolerance = 1e-6)
+  # only scaled: invariant to scaling (location matters, the data are not centered)
+  expect_equal(fit(x * 4, center = FALSE)$a, fit(x, center = FALSE)$a,
+               tolerance = 1e-6)
+})
