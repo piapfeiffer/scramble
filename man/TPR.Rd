@@ -9,11 +9,18 @@ TPR(A_true, A)
 \arguments{
 \item{A_true}{A matrix of the ground truth.}
 
-\item{A}{A matrix.}
+\item{A}{A matrix of the same dimension.}
 }
 \value{
-The number of correctly identified non-zero components.
+The proportion of non-zero entries of `A_true` that are also
+ non-zero in `A`.
 }
 \description{
-This function compares the structure of two matrices A and A_true.
+Compares the sparsity structure of an estimated matrix `A` with the ground
+truth `A_true`.
+}
+\examples{
+A_true <- matrix(c(1, 1, 0, 0), 2)
+A <- matrix(c(1, 0, 0, 1), 2)
+TPR(A_true, A)
 }

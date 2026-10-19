@@ -2,11 +2,7 @@
 % Please edit documentation in R/compute_PCA_scramble.R
 \name{pcaSCRAMBLE}
 \alias{pcaSCRAMBLE}
-\title{Compute PCA
-Function to compute PCA using
-a modified algorithm combining the MM algorithm and Gradient Descent.
-This algorithm is not using the full covariance matrix and instead decomposes
-the data matrix to be memory efficient, even in the case of many variables.}
+\title{Cellwise robust and sparse PCA}
 \usage{
 pcaSCRAMBLE(
   data_x,
@@ -28,63 +24,95 @@ pcaSCRAMBLE(
 )
 }
 \arguments{
-\item{data_x}{An (nxp) data matrix}
+\item{data_x}{An (n x p) numeric data matrix (or data frame).}
 
-\item{groups}{A (1xn) vector containing the groups of the observations}
+\item{groups}{Optional vector of length n containing the group of each
+observation. If `NA` (default), no group structure is used. With groups,
+centering and scaling are done per group.}
 
-\item{transformation}{The selected data transformation for the initial estimate.
-Default is "identity", this would correspond to using the sample covariance,
-has to be one of the following: "spearman", "wrapping"}
+\item{transformation}{Data transformation used for the initial estimate,
+one of `"identity"` (default, corresponds to the sample covariance),
+`"spearman"` (rank-based) or `"wrapping"`.}
 
-\item{loss_type}{The selected type of loss function. Default is "L2", corresponding to a least
-squares loss. The type has to be one of the following: "L2", "Huber", "Tukey", "LTS"}
+\item{loss_type}{Loss function, one of `"L2"` (default, least squares),
+`"Huber"`, `"Tukey"` or `"LTS"` (least trimmed squares).}
 
-\item{center}{logical: whether data should be centered before proceeding.
-Default is "TRUE", using the median}
+\item{param}{Parameter of the `"LTS"` loss: the proportion of cells that is
+kept per variable. Try 0.75 (used if `NA`) and increase or decrease for
+tuning. Ignored for the other loss types.}
 
-\item{scale}{logical: whether data should be scaled before proceeding.
-Default is "TRUE", using the mad}
+\item{center}{Logical: whether the data should be robustly centered (using
+the median) before proceeding. Default is `TRUE`.}
 
-\item{alpha_x}{A positive real scalar containing a number between 0 and 1, indicating the elastic
-net parameter for data_x for each loading.}
+\item{scale}{Logical: whether the data should be robustly scaled (using the
+Qn estimator, or the MAD if `groups` are given) before proceeding.
+Default is `TRUE`.}
 
-\item{k}{highest order of maximum association you want to retrieve}
+\item{alpha_x}{Elastic net mixing parameter between 0 (ridge) and 1 (lasso).
+Must be supplied.}
 
-\item{tol}{desired accuracy for inner loop}
+\item{k}{Number of principal components to compute. Defaults to
+`min(n, p)`; a smaller value speeds up computation considerably.}
 
-\item{lr}{learning rate for gradient descent algorithm}
+\item{tol}{Convergence tolerance of the gradient descent.}
 
-\item{epochs}{maximum number of iterations for inner loop}
+\item{lr}{Learning rate of the gradient descent.}
 
-\item{lr_decay}{learning rate decay for gradient descent algorithm}
+\item{epochs}{Maximum number of gradient descent iterations.}
 
-\item{criterion}{selection criterion for score function, default is Tradoff Product Optimization, TPO}
+\item{lr_decay}{Multiplicative learning rate decay per epoch.}
 
-\item{penalties}{(optional) if given, no hyperparameter optimization is done,
-but the given penalty parameters are used.
-It has to be list structure, containing pen_x to be used for each loading}
+\item{criterion}{Criterion for selecting the penalty parameter: `"TPO"`
+(default, tradeoff product optimization), `"BIC"`, or any other value to
+maximize the explained variance only.}
 
-\item{...}{Additional parameters to be passed to the loss functions}
+\item{bounds}{Numeric vector of length 2, the search range of the penalty
+parameter used in the Bayesian optimization.}
+
+\item{penalties}{Optional list with element `pen_x`. If given, no
+hyperparameter optimization is done and `pen_x` is used as penalty.}
 }
 \value{
-An object of class "PCA_result" that contains following entries:
-
-a A (pxk) vector of the estimated loadings
-
-measure A (1xk) vector of the explained variance
-
-phi A (nxk) matrix of the estimated scores corresponding a * data_x
-
-pen_x A (1xk) vector of the optimal penalty parameters for data_x
-
-alpha_x The value of the elastic net parameter alpha_x
-
-summary A summary of the hyperparameter optimization
+An object of class `"PCA_result"`, a list with elements
+\describe{
+  \item{a}{(p x k) matrix of sparse loadings.}
+  \item{a_ortho}{(p x k) matrix of orthogonal loadings before thresholding.}
+  \item{u, s}{Currently always `NULL`; kept for backward compatibility.}
+  \item{loss}{Value of the objective in each epoch (`NA` after convergence).}
+  \item{measure}{Robust variances (Qn) of the sparse components.}
+  \item{measure_ortho}{Robust variances (Qn) of the orthogonal components.}
+  \item{explained_var}{Cumulative proportion of explained variance.}
+  \item{phi}{(n x k) matrix of scores, the standardized data times `a`.}
+  \item{pen_x}{The penalty parameter used.}
+  \item{summary}{Summary of the hyperparameter optimization, if done.}
+  \item{wt}{Currently always `NA`; kept for backward compatibility.}
+  \item{robscale, robcenter}{Robust scale and location estimates of the
+    variables.}
+  \item{alpha_x}{The elastic net parameter used.}
+}
 }
 \description{
-Compute PCA
-Function to compute PCA using
-a modified algorithm combining the MM algorithm and Gradient Descent.
-This algorithm is not using the full covariance matrix and instead decomposes
-the data matrix to be memory efficient, even in the case of many variables.
+Computes sparse and cellwise robust principal components by Riemannian
+gradient descent on the Stiefel manifold. The data matrix is decomposed
+directly instead of forming the full covariance matrix, which keeps the
+memory footprint small even for many variables.
+}
+\examples{
+if (torch::torch_is_installed()) {
+  set.seed(1)
+  x <- matrix(rnorm(50 * 6), 50, 6)
+  x[, 2] <- x[, 1] + rnorm(50, sd = 0.1)
+  # fixed penalty: no hyperparameter optimization
+  res <- pcaSCRAMBLE(x, alpha_x = 0.5, k = 2,
+                     penalties = list(pen_x = 0.1), epochs = 200)
+  res$a
+  plot(res)
+}
+\donttest{
+if (torch::torch_is_installed()) {
+  # robust version with tuned penalty (fewer epochs to keep it short)
+  res_rob <- pcaSCRAMBLE(x, transformation = "wrapping", loss_type = "Huber",
+                         alpha_x = 0.5, k = 2, epochs = 500, tol = 1e-4)
+}
+}
 }

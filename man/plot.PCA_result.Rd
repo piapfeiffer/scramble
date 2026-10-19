@@ -2,17 +2,29 @@
 % Please edit documentation in R/compute_PCA_scramble.R
 \name{plot.PCA_result}
 \alias{plot.PCA_result}
-\title{Plot PCA
-Function to plot summary of PCA computation and hyperparameter optimization}
+\title{Plot a PCA result}
 \usage{
 \method{plot}{PCA_result}(x, ...)
 }
 \arguments{
-\item{x}{object of class PCA_result}
+\item{x}{An object of class `"PCA_result"`, as returned by [pcaSCRAMBLE()].}
 
-\item{...}{additional parameters to be passed to ggplot2}
+\item{...}{Currently unused.}
+}
+\value{
+`x`, invisibly.
 }
 \description{
-Plot PCA
-Function to plot summary of PCA computation and hyperparameter optimization
+Plots the explained variance, the robust variances, the scores of the first
+two components, the loss trace and, if the penalty was tuned, the
+hyperparameter optimization.
+}
+\examples{
+if (torch::torch_is_installed()) {
+  set.seed(1)
+  x <- matrix(rnorm(50 * 6), 50, 6)
+  res <- pcaSCRAMBLE(x, alpha_x = 0.5, k = 2,
+                     penalties = list(pen_x = 0.1), epochs = 200)
+  plot(res)
+}
 }
