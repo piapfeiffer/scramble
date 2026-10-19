@@ -9,12 +9,17 @@ Pfeiffer, Vana-Gür and Filzmoser (2025) <doi:10.1007/s11634-025-00656-3>.
 
 * This is a new submission.
 
+  The note also lists possibly misspelled words in DESCRIPTION. These are
+  correct: technical terms (Cellwise, cellwise, Riemannian, Stiefel) and the
+  names of the paper's authors (Pfeiffer, Vana, Filzmoser).
+
 ## Test environments
 
 * local macOS 26.6 (aarch64), R 4.6.1, `R CMD check --as-cran`
   - with the 'torch' backend installed, running all examples
     (incl. `\donttest{}`), tests and the vignette
   - without the 'torch' backend, as on the CRAN check machines
+* win-builder: Windows Server 2022 (x86_64), R 4.6.1 (release)
 
 ## Use of 'torch'
 
