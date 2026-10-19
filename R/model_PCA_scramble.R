@@ -60,17 +60,16 @@ model_PCA_SVD <- torch::nn_module(
     X_t <- self$X_tensor
     X_r <- self$X_resid
 
-    m1 <- torch::torch_tensor(rep(0.0, ncol(self$V)),
-                              dtype = torch::torch_double())
-    for (j in 1:ncol(self$V)){
-      m1[j] <- penalty_fun_unc(self$V[,j], self$pen_x * self$TV[j], self$alpha_x)
-    }
+    # elastic net penalty of all columns at once
+    V <- self$V
+    l1 <- torch::torch_sum(torch::torch_tanh(1000 * V) * V, dim = 1)
+    l2 <- torch::torch_sum(V^2, dim = 1)
+    weights <- torch::torch_tensor(self$pen_x * self$TV[seq_len(ncol(V))],
+                                   dtype = torch::torch_double())
+    G <- (self$alpha_x * l1 + (1 - self$alpha_x) * l2) * weights
 
-    G <- torch::torch_cat(c(torch::torch_unsqueeze(m1, 2)))
-
-    B <-  torch::torch_matmul(X_t,
-                              torch::torch_matmul(self$V,
-                                                  torch::torch_transpose(self$V, 1, -1)))
+    B <- torch::torch_matmul(torch::torch_matmul(X_t, V),
+                             torch::torch_transpose(V, 1, -1))
     if (self$loss_type == "L2") {
       loss <- torch::torch_mean(torch::torch_square(X_r - B)) + torch::torch_sum(G)
 

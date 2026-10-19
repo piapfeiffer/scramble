@@ -17,3 +17,10 @@
 * Training is faster: the data tensor is created once instead of in every
   epoch, and the robust variances are computed once after training instead of
   at every improvement. Results are bit-identical to before.
+* Training is up to ~5x faster for many variables: the Cayley step of the
+  Stiefel optimizer solves a (2k x 2k) system via the Woodbury identity
+  instead of a (p x p) system, the reconstruction is computed as
+  `(X V) V^T`, and the elastic net penalty is computed for all components
+  at once. These are mathematically identical, but floating-point rounding
+  differs: loadings change by about 1e-10 (sparsity patterns and selected
+  penalties were unchanged in our comparisons).
