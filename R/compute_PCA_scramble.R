@@ -198,11 +198,13 @@ pcaSCRAMBLE <- function(data_x,
     t_x <- scale(t_x,
                  center = apply(t_x, 2, mean),
                  scale = apply(t_x, 2, sd))
+    # give the ranks the location and scale of the data; before version
+    # 0.2.0 those of the raw data (or, with groups, of the last group) were used
     if (!isTRUE(scale)) {
-      t_x <- sweep(t_x, MARGIN = 2, robscale, `*`)
+      t_x <- sweep(t_x, MARGIN = 2, scale_x, `*`)
     }
     if (!isTRUE(center)) {
-      t_x <- sweep(t_x, MARGIN = 2, robcenter, `+`)
+      t_x <- sweep(t_x, MARGIN = 2, loc_x, `+`)
     }
     rsvd <- svd(t_x)
 

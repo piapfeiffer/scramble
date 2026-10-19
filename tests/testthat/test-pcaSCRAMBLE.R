@@ -141,3 +141,15 @@ test_that("wrapping is invariant to the location and scale of the variables", {
   expect_equal(fit(x * 4, center = FALSE)$a, fit(x, center = FALSE)$a,
                tolerance = 1e-6)
 })
+
+test_that("spearman uses the location and scale of the data it is applied to", {
+  skip_if_no_torch()
+  x <- make_data()
+  fit <- function(x, ...) fit_quick(x, transformation = "spearman", epochs = 30, ...)
+  # scaled but not centered: invariant to scaling of the data
+  expect_equal(fit(x * 4, center = FALSE)$a, fit(x, center = FALSE)$a,
+               tolerance = 1e-6)
+  # without standardization, groups play no role for the initial estimate
+  expect_equal(fit(x, groups = rep(1:2, 20), center = FALSE, scale = FALSE)$a,
+               fit(x, center = FALSE, scale = FALSE)$a, tolerance = 1e-6)
+})

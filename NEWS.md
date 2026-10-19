@@ -28,6 +28,16 @@ so that results can be traced to the version that produced them.
   59/81 to 13/20 degrees. Results with `transformation = "wrapping"` change,
   except with `center = FALSE, scale = FALSE` without groups.
 
+* `transformation = "spearman"` with `center = FALSE` or `scale = FALSE`:
+  the standardized ranks were given the location and scale of the *raw*
+  data, so with `center = FALSE, scale = TRUE` a location in the units of the
+  raw data was added to scaled data, and with groups the location 0 / scale 1
+  (or the estimates of the last group) were used. They now get the median /
+  Qn of the data the ranks are computed from. Results change for
+  `center = FALSE, scale = TRUE`, and for `groups` with `center = FALSE` or
+  `scale = FALSE`; `center = TRUE, scale = FALSE` without groups is unchanged
+  (up to ~1e-15).
+
 # scramble 0.1.0
 
 * First CRAN release. The user-facing API (`pcaSCRAMBLE()`, `train_PCA_SVD()`,
