@@ -1,19 +1,20 @@
-#' NN module for robust and sparse PCA via SVD
-#' @param X data input
-#' @param rsvd object containing SVD decompositin of R
-#' @param n number of
-#' @param p number of variables in data_x
-#' @param pen_x (1xk) A positive real vector containing the penalty parameter for
-#'  data_x for association of order k.
-#' @param order The order of association to be computed
-#' @param alpha_x (1xk) A positive real vector containing numbers between 0 and
-#' 1, indicating the elastic
-#'  net parameter for data_x for association of order k.
-#' @param warm_u A vector of the currently best linear combination
-#' @param warm_v A vector of the currently best linear combination
-#' @param warm_s A  scalar of the currently best singular value
-#' @param warm_m A vector of the currently best multiplier values
-#' @param low_u A (px(k-1)) matrix of lower order linear combinations
+#' Torch module for robust and sparse PCA
+#'
+#' The loadings `V` are the only parameter. The forward pass returns the
+#' (robust) reconstruction loss of `X` from its projection onto `V` plus the
+#' elastic net penalty of each column of `V`.
+#'
+#' @param X Standardized (n x p) data matrix.
+#' @param groups Vector of group labels or `NA`; only used by the LTS loss.
+#' @param rsvd List with element `v`, the (p x k) initial loadings.
+#' @param n,p Number of observations and variables.
+#' @param pen_x Penalty parameter.
+#' @param alpha_x Elastic net mixing parameter.
+#' @param loss_type One of "L2", "Huber", "Tukey", "LTS".
+#' @param h Proportion of cells kept per variable for the LTS loss.
+#' @param warm_v Optional warm start for the loadings, used instead of `rsvd$v`.
+#' @param warm_m Currently unused.
+#' @noRd
 model_PCA_SVD <- torch::nn_module(
   initialize = function(X,
                         groups,
@@ -46,32 +47,41 @@ model_PCA_SVD <- torch::nn_module(
                                                           dtype = torch::torch_double()), requires_grad = TRUE)
       }
     self$TV <- apply(X, 2, robustbase::Qn)
+    # converting X to a tensor is costly for large data; do it only once.
+    # The residuals have always been computed as `X - B` with the R matrix X,
+    # which torch converts with its default dtype (float32); X_resid keeps
+    # exactly that behaviour so that results are unchanged.
+    self$X_tensor <- torch::torch_tensor(X, dtype = torch::torch_double())
+    self$X_resid <- torch::torch_tensor(X)
 
   }, forward = function(X) {
+    # X must be the matrix the module was initialized with; its tensor
+    # versions are cached in initialize()
+    X_t <- self$X_tensor
+    X_r <- self$X_resid
 
-    m1 <- torch::torch_tensor(rep(0.0, ncol(self$V)),
-                              dtype = torch::torch_double())
-    for (j in 1:ncol(self$V)){
-      m1[j] <- penalty_fun_unc(self$V[,j], self$pen_x * self$TV[j], self$alpha_x)
-    }
+    # elastic net penalty of all columns at once
+    V <- self$V
+    l1 <- torch::torch_sum(torch::torch_tanh(1000 * V) * V, dim = 1)
+    l2 <- torch::torch_sum(V^2, dim = 1)
+    weights <- torch::torch_tensor(self$pen_x * self$TV[seq_len(ncol(V))],
+                                   dtype = torch::torch_double())
+    G <- (self$alpha_x * l1 + (1 - self$alpha_x) * l2) * weights
 
-    G <- torch::torch_cat(c(torch::torch_unsqueeze(m1, 2)))
-
-    B <-  torch::torch_matmul(torch::torch_tensor(X, dtype = torch::torch_double()),
-                              torch::torch_matmul(self$V,
-                                                  torch::torch_transpose(self$V, 1, -1)))
+    B <- torch::torch_matmul(torch::torch_matmul(X_t, V),
+                             torch::torch_transpose(V, 1, -1))
     if (self$loss_type == "L2") {
-      loss <- torch::torch_mean(torch::torch_square(X - B)) + torch::torch_sum(G)
+      loss <- torch::torch_mean(torch::torch_square(X_r - B)) + torch::torch_sum(G)
 
     } else if (self$loss_type == "Huber") {
-      loss <- loss_huber(X - B) + torch::torch_sum(G)
+      loss <- loss_huber(X_r - B) + torch::torch_sum(G)
 
     } else if (self$loss_type == "Tukey") {
-      loss <- loss_tukey(X - B) + torch::torch_sum(G)
+      loss <- loss_tukey(X_r - B) + torch::torch_sum(G)
 
     } else if (self$loss_type == "LTS") {
       if (is.na(self$groups[1])){
-        loss <- loss_lts(X - B, self$h) + torch::torch_sum(G)
+        loss <- loss_lts(X_r - B, self$h) + torch::torch_sum(G)
       }
       else{
         loss <- torch::torch_sum(G)
@@ -86,7 +96,7 @@ model_PCA_SVD <- torch::nn_module(
 
     }else {
       warning(paste("Loss type:",self$loss_type, "not implemented, standard L2 loss is used instead!"))
-      loss <- torch::torch_square(torch::torch_norm(X - B)) + torch::torch_sum(G)
+      loss <- torch::torch_square(torch::torch_norm(X_r - B)) + torch::torch_sum(G)
     }
 
      loss

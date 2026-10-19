@@ -2,18 +2,25 @@
 % Please edit documentation in R/utils.R
 \name{principal_angles}
 \alias{principal_angles}
-\title{Get principal angles.}
+\title{Principal angles between subspaces}
 \usage{
 principal_angles(a, b)
 }
 \arguments{
 \item{a}{A matrix.}
 
-\item{b}{A matrix.}
+\item{b}{A matrix with the same number of rows as `a`.}
 }
 \value{
-A list of angles.
+A list with element `angles`, a column matrix of the principal
+ angles (in radians).
 }
 \description{
-Calculate minimal angle between subspace a and b
+Calculates the principal angles between the column spaces of `a` and `b`,
+e.g. to compare estimated and true loadings.
+}
+\examples{
+a <- diag(3)[, 1:2]
+b <- cbind(c(1, 1, 0) / sqrt(2), c(0, 0, 1))
+principal_angles(a, b)
 }

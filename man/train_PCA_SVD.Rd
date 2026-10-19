@@ -2,8 +2,7 @@
 % Please edit documentation in R/train_PCA_scramble.R
 \name{train_PCA_SVD}
 \alias{train_PCA_SVD}
-\title{MM algorithm for PCA objects
-implements MM algorithms for robust and sparse PCA}
+\title{Train the robust and sparse PCA model}
 \usage{
 train_PCA_SVD(
   X,
@@ -24,32 +23,62 @@ train_PCA_SVD(
 )
 }
 \arguments{
-\item{p}{number of variables in data_x}
+\item{X}{An (n x p) numeric data matrix, already standardized.}
 
-\item{pen_x}{(1xk) A positive real vector containing the penalty parameter for
-data_x for association of order k.}
+\item{groups}{Vector of length n with the group of each observation, or
+`NA` for no groups. Only used by the `"LTS"` loss.}
 
-\item{alpha_x}{(1xk) A positive real vector containing numbers between 0 and
-1, indicating the elastic
- net parameter for data_x for association of order k.}
+\item{rsvd}{A list with element `v`, a (p x k) matrix of initial loadings
+(e.g. the result of [svd()] restricted to k columns).}
 
-\item{tol}{tolerance for training algorithm}
+\item{n}{Number of observations.}
 
-\item{lr}{learning rate for gradient descent training algorithm}
+\item{p}{Number of variables.}
 
-\item{epochs}{maximum number of epochs for gradient descent training algorithm}
+\item{pen_x}{Penalty parameter (non-negative scalar).}
 
-\item{lr_decay}{parameter for}
+\item{alpha_x}{Elastic net mixing parameter between 0 (ridge) and 1 (lasso).}
 
-\item{show_warnings}{logical}
+\item{loss_type}{One of `"L2"`, `"Huber"`, `"Tukey"` or `"LTS"`.}
 
-\item{init_ortho}{logical}
+\item{h}{Proportion of cells kept per variable for the `"LTS"` loss.}
 
-\item{C}{estimated covariance matrix}
+\item{tol}{Convergence tolerance on the change of the objective.}
 
-\item{low_a}{A (px(k-1)) matrix of lower order linear combinations}
+\item{lr}{Learning rate.}
+
+\item{epochs}{Maximum number of epochs.}
+
+\item{lr_decay}{Multiplicative learning rate decay per epoch.}
+
+\item{show_warnings}{Logical: warn if the algorithm did not converge? If
+`FALSE`, `best_measure` is set to 0 instead.}
+
+\item{init_ortho}{Currently unused.}
+}
+\value{
+A list with elements `best_measure` (robust variances of the sparse
+ components), `best_loss`, `best_v` (sparse loadings), `best_v_ortho`
+ (orthogonal loadings before thresholding), `plot_loss` (loss per epoch)
+ and `best_measure_ortho`.
 }
 \description{
-MM algorithm for PCA objects
-implements MM algorithms for robust and sparse PCA
+Low-level routine used by [pcaSCRAMBLE()]: runs Riemannian gradient descent
+on the Stiefel manifold for a fixed penalty parameter, starting from the
+loadings in `rsvd$v`, and thresholds small loadings afterwards. Most users
+should call [pcaSCRAMBLE()] instead, which also standardizes the data and
+tunes the penalty.
+}
+\examples{
+if (torch::torch_is_installed()) {
+  set.seed(1)
+  x <- scale(matrix(rnorm(40 * 5), 40, 5))
+  rsvd <- svd(x)
+  rsvd$v <- rsvd$v[, 1:2]
+  res <- train_PCA_SVD(x, groups = NA, rsvd = rsvd, n = 40, p = 5,
+                       pen_x = 0.1, alpha_x = 0.5, loss_type = "L2",
+                       h = NA, tol = 1e-5, lr = 1e-3, epochs = 100,
+                       lr_decay = 1)
+  res$best_v
+}
 }

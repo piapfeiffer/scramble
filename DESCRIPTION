@@ -2,12 +2,30 @@ Package: scramble
 Type: Package
 Title: Cellwise Robust and Sparse Principal Component Analysis
 Version: 0.1.0
-Author: Doubleblind
-Maintainer: Doubleblind <doublebline@anonymous.com>
-Description: scramble is a package for "sparse and cellwise robust algorithms for manifold based learning and estimation", and the cellwise robust and sparse PCA is performed using a manifold-learning algorithm
+Authors@R:
+    person("Pia", "Pfeiffer", , "piabarbara.pfeiffer@gmail.com", role = c("aut", "cre"))
+Description: Sparse and cellwise robust principal component analysis based on
+    manifold optimization. Loadings are estimated by Riemannian gradient descent
+    on the Stiefel manifold with an elastic net penalty and robust loss functions
+    (Huber, Tukey, least trimmed squares), using 'torch' for automatic
+    differentiation. Robust starting values are obtained from rank-based or
+    wrapping transformations, and penalty parameters are tuned by Bayesian
+    optimization.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 RoxygenNote: 7.3.2
-Imports: 
+Imports:
+    cellWise,
+    graphics,
+    ParBayesianOptimization,
+    robustbase,
+    stats,
+    torch,
+    utils
+Suggests:
+    knitr,
+    mvtnorm,
+    rmarkdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
+Config/testthat/edition: 3

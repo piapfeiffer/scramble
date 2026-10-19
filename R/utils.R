@@ -1,10 +1,17 @@
-#' Get principal angles.
+#' Principal angles between subspaces
 #'
-#' Calculate minimal angle between subspace a and b
-#' @param a  A matrix.
-#' @param b  A matrix.
-#' @returns  A list of angles.
+#' Calculates the principal angles between the column spaces of `a` and `b`,
+#' e.g. to compare estimated and true loadings.
+#'
+#' @param a A matrix.
+#' @param b A matrix with the same number of rows as `a`.
+#' @returns A list with element `angles`, a column matrix of the principal
+#'  angles (in radians).
 #' @export
+#' @examples
+#' a <- diag(3)[, 1:2]
+#' b <- cbind(c(1, 1, 0) / sqrt(2), c(0, 0, 1))
+#' principal_angles(a, b)
 principal_angles <- function(a, b) {
   angles <- matrix(0, ncol = ncol(a), nrow = 1)
   qa <- qr.Q(qr(a))
@@ -30,33 +37,45 @@ principal_angles <- function(a, b) {
     }
     angles <- t(angles)
   }
-  out <- list(angles = angles)
+  list(angles = angles)
 }
 
 
 #' True positive rate
 #'
-#' This function compares the structure of two matrices A and A_true.
+#' Compares the sparsity structure of an estimated matrix `A` with the ground
+#' truth `A_true`.
 #'
 #' @param A_true A matrix of the ground truth.
-#' @param A A matrix.
-#' @returns The number of correctly identified non-zero components.
+#' @param A A matrix of the same dimension.
+#' @returns The proportion of non-zero entries of `A_true` that are also
+#'  non-zero in `A`.
 #' @export
+#' @examples
+#' A_true <- matrix(c(1, 1, 0, 0), 2)
+#' A <- matrix(c(1, 0, 0, 1), 2)
+#' TPR(A_true, A)
 TPR <- function(A_true, A) {
-  out <- sum(A_true != 0 & A != 0) / sum(A_true != 0)
+  sum(A_true != 0 & A != 0) / sum(A_true != 0)
 }
 
 
 #' True negative rate
 #'
-#' This function compares the structure of two matrices A and A_true.
+#' Compares the sparsity structure of an estimated matrix `A` with the ground
+#' truth `A_true`.
 #'
-#' @param A_true   A matrix of the ground truth.
-#' @param A        A matrix.
-#' @returns The number of correctly identified zero components.
+#' @param A_true A matrix of the ground truth.
+#' @param A A matrix of the same dimension.
+#' @returns The proportion of zero entries of `A_true` that are also zero in
+#'  `A`.
 #' @export
+#' @examples
+#' A_true <- matrix(c(1, 1, 0, 0), 2)
+#' A <- matrix(c(1, 0, 0, 1), 2)
+#' TNR(A_true, A)
 TNR <- function(A_true, A) {
-  out <- sum(A_true == 0 & A == 0) / sum(A_true == 0)
+  sum(A_true == 0 & A == 0) / sum(A_true == 0)
 }
 
 #' Higher order constraint for robust and sparse PCA / CCA
@@ -66,6 +85,7 @@ TNR <- function(A_true, A) {
 #' @param z       A (1xp) torch::torch_tensor
 #' @param low_z   A (kxp) torch::torch_tensor
 #' @param C       A (pxp) matrix
+#' @noRd
 higher_order <- function(z, low_z, C = NULL) {
 
   if (is.null(C)) {
@@ -82,6 +102,7 @@ higher_order <- function(z, low_z, C = NULL) {
 #' @param z    A (1xp) torch::torch_tensor
 #' @param C    A (pxp) quadratic matrix
 #' @returns z_constrained, the value of the equality constraints
+#' @noRd
 constraint_fun <- function(z, C = NULL) {
   if (is.null(C)) {
     z_constrained <- torch::torch_matmul(torch::torch_transpose(z, 1, -1), z) - 1
@@ -103,6 +124,7 @@ constraint_fun <- function(z, C = NULL) {
 #' @param pen           penalty parameter
 #' @param alpha         elastic net mixing parameter
 #' @returns              A 1x1 torch::torch_tensor
+#' @noRd
 penalty_fun <- function(z, pen, alpha) {
   l1 <- torch::torch_sum(torch::torch_abs(z))
   l2 <- torch::torch_square(torch::torch_norm(z))
@@ -123,6 +145,7 @@ penalty_fun <- function(z, pen, alpha) {
 #' @param pen           penalty parameter
 #' @param alpha         elastic net mixing parameter
 #' @returns              A 1x1 torch::torch_tensor
+#' @noRd
 penalty_fun_unc <- function(z, pen, alpha) {
   l1 <- torch::torch_sum(torch::torch_tanh(1000*z) * z)
   l2 <- torch::torch_square(torch::torch_norm(z))
@@ -139,6 +162,7 @@ penalty_fun_unc <- function(z, pen, alpha) {
 #' @param M             A matrix torch::torch_tensor
 #' @param d             Scalar, parameter for Huber loss
 #' @returns             A 1x1 torch::torch_tensor
+#' @noRd
 loss_huber <- function(M, d = 1.35) {
   sigma <- torch::torch_median(torch::torch_abs(M), 1, keepdim = TRUE)[[1]]
   M <- M / sigma
@@ -151,8 +175,9 @@ loss_huber <- function(M, d = 1.35) {
 #' Function to compute Tukey loss for a given matrix.
 #'
 #' @param M             A matrix torch::torch_tensor
-#' @param k             Scalar, parameter for Huber loss
+#' @param k             Scalar, tuning constant of the Tukey loss
 #' @returns             A 1x1 torch::torch_tensor
+#' @noRd
 loss_tukey <- function(M, k = 1.35) {
   sigma <- torch::torch_median(torch::torch_abs(M), 1, keepdim = TRUE)[[1]]
   M <- M / sigma
@@ -163,11 +188,12 @@ loss_tukey <- function(M, k = 1.35) {
 
 #' Loss function for robust and sparse PCA via SVD
 #'
-#' Function to compute trimmes loss for a given matrix.
+#' Function to compute trimmed loss for a given matrix.
 #'
 #' @param M             A matrix torch::torch_tensor
 #' @param h             Trimming parameter (robustness) of observations to use per column
 #' @returns             A 1x1 torch::torch_tensor
+#' @noRd
 loss_lts <- function(M, h = 0.75) {
   least_squares <- M^2
   threshold <- torch::torch_quantile(M,
@@ -187,10 +213,11 @@ loss_lts <- function(M, h = 0.75) {
 #'
 #' @param ind_outl     position of outliers
 #' @param flag_outl    flagged cells
+#' @noRd
 f1_score <- function(ind_outl, flag_outl) {
   TP <- length(intersect(flag_outl, ind_outl)) #TP
   FP <- length(setdiff(flag_outl, ind_outl)) #FP
   FN <- length(setdiff(ind_outl, flag_outl)) #FN
 
-  f1_score <- TP / (TP + 0.5 * (FP + FN))
+  TP / (TP + 0.5 * (FP + FN))
 }

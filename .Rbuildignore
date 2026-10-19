@@ -1,2 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^LICENSE\.md$
+^docs$
+^_pkgdown\.yml$
+^\.DS_Store$
+^.*/\.DS_Store$

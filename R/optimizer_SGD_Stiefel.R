@@ -28,17 +28,17 @@ optim_sgd_manifold <- torch::optimizer(
                                                                   param)
                                                                 ))
 
-              a1 <- torch::torch_matmul(manifold_grad,
-                                        torch::torch_transpose(param, 1, -1)
-                                        )
-              a2 <-  torch::torch_matmul(param,
-                                         torch::torch_transpose(manifold_grad, 1, -1))
-              a <- a1 - a2
-              rhs <- param + 1/2 * torch::torch_matmul(a, param)
-              lhs <- -1/2 * a + torch::torch_eye(nrow(a), ncol(a),
-                                                 dtype = torch::torch_double())
-
-              new_param <- torch::linalg_solve(lhs, rhs)
+              # Cayley transform (I - A/2)^{-1} (I + A/2) param with the
+              # rank-2k matrix A = W param^T - param W^T, solved via the
+              # Woodbury identity in a (2k x 2k) system instead of (p x p)
+              U <- torch::torch_cat(list(manifold_grad, param), dim = 2)
+              Ct <- torch::torch_transpose(
+                torch::torch_cat(list(param, -manifold_grad), dim = 2), 1, -1)
+              rhs <- param + 1/2 * torch::torch_matmul(U, torch::torch_matmul(Ct, param))
+              small <- torch::torch_eye(U$size(2), dtype = torch::torch_double()) -
+                1/2 * torch::torch_matmul(Ct, U)
+              new_param <- rhs + 1/2 * torch::torch_matmul(
+                U, torch::linalg_solve(small, torch::torch_matmul(Ct, rhs)))
 
               if (!is.na(group$threshold)){
                 new_param <- soft(new_param, group$threshold)
