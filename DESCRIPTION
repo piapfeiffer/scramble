@@ -3,7 +3,7 @@ Type: Package
 Title: Cellwise Robust and Sparse Principal Component Analysis
 Version: 0.2.0
 Authors@R:
-    person("Pia", "Pfeiffer", , "piabarbara.pfeiffer@gmail.com", role = c("aut", "cre"))
+    person("Pia", "Pfeiffer", , "pia.pfeiffer@tuwien.ac.at", role = c("aut", "cre"))
 Description: Sparse and cellwise robust principal component analysis based on
     manifold optimization. Loadings are estimated by Riemannian gradient descent
     on the Stiefel manifold with an elastic net penalty and robust loss functions
@@ -17,7 +17,6 @@ BugReports: https://github.com/piapfeiffer/scramble/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.3.2
 Imports:
     cellWise,
     graphics,
@@ -33,3 +32,4 @@ Suggests:
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.1

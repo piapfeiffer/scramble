@@ -6,10 +6,12 @@ export(TPR)
 export(pcaSCRAMBLE)
 export(principal_angles)
 export(train_PCA_SVD)
-importFrom(stats,cor)
-importFrom(stats,cov)
-importFrom(stats,mad)
-importFrom(stats,median)
-importFrom(stats,rchisq)
-importFrom(stats,sd)
+importFrom(stats,
+  cor,
+  cov,
+  mad,
+  median,
+  rchisq,
+  sd
+)
 importFrom(utils,head)

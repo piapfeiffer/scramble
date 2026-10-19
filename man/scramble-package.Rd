@@ -17,7 +17,12 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Pia Pfeiffer \email{piabarbara.pfeiffer@gmail.com}
+\strong{Maintainer}: Pia Pfeiffer \email{pia.pfeiffer@tuwien.ac.at}
+
+Authors:
+\itemize{
+  \item Pia Pfeiffer \email{pia.pfeiffer@tuwien.ac.at}
+}
 
 }
 \keyword{internal}
